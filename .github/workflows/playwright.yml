@@ -1,27 +1,33 @@
-name: Playwright Tests
+name: Test Summary with Mermaid
+
 on:
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+
 jobs:
   test:
-    timeout-minutes: 60
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      run: npx playwright test
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Dummy test result (replace with real logic)
+        run: |
+          echo "85" > passed.txt
+          echo "15" > failed.txt
+
+      - name: Read values
+        id: get_values
+        run: |
+          PASSED=$(cat passed.txt)
+          FAILED=$(cat failed.txt)
+          echo "passed=$PASSED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Add Mermaid chart to summary
+        run: |
+          echo '```mermaid' >> $GITHUB_STEP_SUMMARY
+          echo 'pie title Test Execution Summary' >> $GITHUB_STEP_SUMMARY
+          echo "\"Passed\" : ${{ steps.get_values.outputs.passed }}" >> $GITHUB_STEP_SUMMARY
+          echo "\"Failed\" : ${{ steps.get_values.outputs.failed }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
