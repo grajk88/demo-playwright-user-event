@@ -1,33 +1,21 @@
-name: Test Summary with Mermaid
+- name: Upload test summary chart to GitHub summary
+  run: |
+    PASSED=85
+    FAILED=10
+    SKIPPED=5
 
-on:
-  push:
-    branches: [ main ]
+    CHART_URL="https://quickchart.io/chart?c={
+      type:'pie',
+      data:{
+        labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
+        datasets:[{data:[$PASSED,$FAILED,$SKIPPED],backgroundColor:['%234caf50','%23f44336','%23ffc107']}]
+      },
+      options:{
+        plugins:{
+          title:{display:true,text:'🧪 Test Execution Summary'},
+          legend:{position:'bottom'}
+        }
+      }
+    }"
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Dummy test result (replace with real logic)
-        run: |
-          echo "85" > passed.txt
-          echo "15" > failed.txt
-
-      - name: Read values
-        id: get_values
-        run: |
-          PASSED=$(cat passed.txt)
-          FAILED=$(cat failed.txt)
-          echo "passed=$PASSED" >> $GITHUB_OUTPUT
-          echo "failed=$FAILED" >> $GITHUB_OUTPUT
-
-      - name: Add Mermaid chart to summary
-        run: |
-          echo '```mermaid' >> $GITHUB_STEP_SUMMARY
-          echo 'pie title Test Execution Summary' >> $GITHUB_STEP_SUMMARY
-          echo "\"Passed\" : ${{ steps.get_values.outputs.passed }}" >> $GITHUB_STEP_SUMMARY
-          echo "\"Failed\" : ${{ steps.get_values.outputs.failed }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+    echo "![Test Summary]($CHART_URL)" >> $GITHUB_STEP_SUMMARY
