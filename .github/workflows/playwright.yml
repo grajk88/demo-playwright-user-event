@@ -1,4 +1,4 @@
-name: Test Summary with Chart
+name: Test Summary with Pie and Bar Charts
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate-test-summary:
+  test-summary:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,32 +17,37 @@ jobs:
       - name: Simulate test results
         id: simulate
         run: |
-          # Replace this with actual test execution logic
+          # Replace this with actual test result generation
           echo "passed=85" >> $GITHUB_OUTPUT
           echo "failed=10" >> $GITHUB_OUTPUT
           echo "skipped=5" >> $GITHUB_OUTPUT
 
-      - name: Generate chart and add to summary
+      - name: Generate charts and add to summary
         run: |
           PASSED=${{ steps.simulate.outputs.passed }}
           FAILED=${{ steps.simulate.outputs.failed }}
           SKIPPED=${{ steps.simulate.outputs.skipped }}
 
-          # URL encode hex colors for green, red, and amber
-          CHART_URL="https://quickchart.io/chart?c={
+          # URL-safe hex colors
+          GREEN='%234caf50'
+          RED='%23f44336'
+          AMBER='%23ffc107'
+
+          # PIE CHART URL
+          PIE_URL="https://quickchart.io/chart?c={
             type:'pie',
             data:{
               labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
               datasets:[{
                 data:[$PASSED,$FAILED,$SKIPPED],
-                backgroundColor:['%234caf50','%23f44336','%23ffc107']
+                backgroundColor:[$GREEN,$RED,$AMBER]
               }]
             },
             options:{
               plugins:{
                 title:{
                   display:true,
-                  text:'🧪 Test Execution Summary'
+                  text:'🧪 Test Execution Summary (Pie)'
                 },
                 legend:{
                   position:'bottom'
@@ -51,9 +56,40 @@ jobs:
             }
           }"
 
-          # Escape the URL properly
-          SAFE_URL=$(echo $CHART_URL | sed 's/ /%20/g' | tr -d '\n')
+          # BAR CHART URL
+          BAR_URL="https://quickchart.io/chart?c={
+            type:'bar',
+            data:{
+              labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
+              datasets:[{
+                label:'Test Count',
+                data:[$PASSED,$FAILED,$SKIPPED],
+                backgroundColor:[$GREEN,$RED,$AMBER]
+              }]
+            },
+            options:{
+              plugins:{
+                title:{
+                  display:true,
+                  text:'🧪 Test Execution Summary (Bar)'
+                },
+                legend:{display:false}
+              },
+              scales:{
+                y:{beginAtZero:true}
+              }
+            }
+          }"
 
-          # Add to GitHub job summary
-          echo "### 🧪 Test Result Pie Chart" >> $GITHUB_STEP_SUMMARY
-          echo "![Test Summary]($SAFE_URL)" >> $GITHUB_STEP_SUMMARY
+          # Cleanup spaces and newlines
+          SAFE_PIE=$(echo $PIE_URL | sed 's/ /%20/g' | tr -d '\n')
+          SAFE_BAR=$(echo $BAR_URL | sed 's/ /%20/g' | tr -d '\n')
+
+          # Add both charts to GitHub Summary
+          echo "### 🧪 Test Summary Charts" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📊 Pie Chart" >> $GITHUB_STEP_SUMMARY
+          echo "![Pie Chart]($SAFE_PIE)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 📈 Bar Chart" >> $GITHUB_STEP_SUMMARY
+          echo "![Bar Chart]($SAFE_BAR)" >> $GITHUB_STEP_SUMMARY
