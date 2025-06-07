@@ -1,21 +1,59 @@
-- name: Upload test summary chart to GitHub summary
-  run: |
-    PASSED=85
-    FAILED=10
-    SKIPPED=5
+name: Test Summary with Chart
 
-    CHART_URL="https://quickchart.io/chart?c={
-      type:'pie',
-      data:{
-        labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
-        datasets:[{data:[$PASSED,$FAILED,$SKIPPED],backgroundColor:['%234caf50','%23f44336','%23ffc107']}]
-      },
-      options:{
-        plugins:{
-          title:{display:true,text:'🧪 Test Execution Summary'},
-          legend:{position:'bottom'}
-        }
-      }
-    }"
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-    echo "![Test Summary]($CHART_URL)" >> $GITHUB_STEP_SUMMARY
+jobs:
+  generate-test-summary:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Simulate test results
+        id: simulate
+        run: |
+          # Replace this with actual test execution logic
+          echo "passed=85" >> $GITHUB_OUTPUT
+          echo "failed=10" >> $GITHUB_OUTPUT
+          echo "skipped=5" >> $GITHUB_OUTPUT
+
+      - name: Generate chart and add to summary
+        run: |
+          PASSED=${{ steps.simulate.outputs.passed }}
+          FAILED=${{ steps.simulate.outputs.failed }}
+          SKIPPED=${{ steps.simulate.outputs.skipped }}
+
+          # URL encode hex colors for green, red, and amber
+          CHART_URL="https://quickchart.io/chart?c={
+            type:'pie',
+            data:{
+              labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
+              datasets:[{
+                data:[$PASSED,$FAILED,$SKIPPED],
+                backgroundColor:['%234caf50','%23f44336','%23ffc107']
+              }]
+            },
+            options:{
+              plugins:{
+                title:{
+                  display:true,
+                  text:'🧪 Test Execution Summary'
+                },
+                legend:{
+                  position:'bottom'
+                }
+              }
+            }
+          }"
+
+          # Escape the URL properly
+          SAFE_URL=$(echo $CHART_URL | sed 's/ /%20/g' | tr -d '\n')
+
+          # Add to GitHub job summary
+          echo "### 🧪 Test Result Pie Chart" >> $GITHUB_STEP_SUMMARY
+          echo "![Test Summary]($SAFE_URL)" >> $GITHUB_STEP_SUMMARY
