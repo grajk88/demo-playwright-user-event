@@ -1,59 +1,27 @@
-name: Test Summary with Chart
-
+name: Playwright Tests
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
-
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
 jobs:
-  generate-test-summary:
+  test:
+    timeout-minutes: 60
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Simulate test results
-        id: simulate
-        run: |
-          # Replace this with actual test execution logic
-          echo "passed=85" >> $GITHUB_OUTPUT
-          echo "failed=10" >> $GITHUB_OUTPUT
-          echo "skipped=5" >> $GITHUB_OUTPUT
-
-      - name: Generate chart and add to summary
-        run: |
-          PASSED=${{ steps.simulate.outputs.passed }}
-          FAILED=${{ steps.simulate.outputs.failed }}
-          SKIPPED=${{ steps.simulate.outputs.skipped }}
-
-          # URL encode hex colors for green, red, and amber
-          CHART_URL="https://quickchart.io/chart?c={
-            type:'pie',
-            data:{
-              labels:['✅ Passed','❌ Failed','⚠️ Skipped'],
-              datasets:[{
-                data:[$PASSED,$FAILED,$SKIPPED],
-                backgroundColor:['%234caf50','%23f44336','%23ffc107']
-              }]
-            },
-            options:{
-              plugins:{
-                title:{
-                  display:true,
-                  text:'🧪 Test Execution Summary'
-                },
-                legend:{
-                  position:'bottom'
-                }
-              }
-            }
-          }"
-
-          # Escape the URL properly
-          SAFE_URL=$(echo $CHART_URL | sed 's/ /%20/g' | tr -d '\n')
-
-          # Add to GitHub job summary
-          echo "### 🧪 Test Result Pie Chart" >> $GITHUB_STEP_SUMMARY
-          echo "![Test Summary]($SAFE_URL)" >> $GITHUB_STEP_SUMMARY
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: lts/*
+    - name: Install dependencies
+      run: npm ci
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: Run Playwright tests
+      run: npx playwright test
+    - uses: actions/upload-artifact@v4
+      if: ${{ !cancelled() }}
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30
